@@ -1,3 +1,7 @@
+# remove schedulr
+# random seed
+# self
+
 import os
 import datetime
 import torch
@@ -9,6 +13,9 @@ from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline,Sta
 from stable_diffusion_videos.stable_diffusion_pipeline import StableDiffusionWalkPipeline
 from stable_diffusion_videos.stable_diffusion_img2img_pipeline import StableDiffusionWalkImg2ImgPipeline
 from stable_diffusion_videos.stable_diffusion_walk import StableDiffusionVideoCreater
+
+import io
+from cryptography.fernet import Fernet
 
 class DiffusionClient:
   def __init__(self):
@@ -27,8 +34,19 @@ class DiffusionClient:
     self.nsfw_ok = False
     self.hugging_face_token = ""
     self.model_loaded = False
+    self.encrypt_key = None
   def setSeed(self, seed):
     self.seed = seed
+  def setEncryptKey(self, key):
+    self.encrypt_key = key
+  def encrypt(self, image, path):
+    output = io.BytesIO()
+    image.save(output, format='PNG')
+    data = output.getvalue()
+    fernet = Fernet(self.encrypt_key)
+    encrypted = fernet.encrypt(data)
+    with open(path + ".dat", 'wb') as encrypted_file:
+      encrypted_file.write(encrypted)
   def setupInitDirs(self):
     self.base_path = f'/content/drive/MyDrive/diffusion/'
     self.user_data_path = self.base_path + f'user-data'
@@ -47,7 +65,7 @@ class DiffusionClient:
             "Time",
             "Action",
             "Counter",
-            "Sum", 
+            "Sum",
             "Seed",
             "Width",
             "Height",
@@ -58,7 +76,7 @@ class DiffusionClient:
             "Strength",
             "Prompt",
         ]) + "\n")
-      
+
   def log(self, action, i, sum, seed, width, height, base, mask, strength, prompt, path):
     now = datetime.datetime.now(self.JST)
     filename = path.rsplit('/', 1)[1]
@@ -67,7 +85,7 @@ class DiffusionClient:
       f.write("\t".join([
           now.strftime('%Y%m%d_%H%M%S'),
           action,
-          i, 
+          i,
           sum,
           seed,
           width,
@@ -105,7 +123,7 @@ class DiffusionClient:
     self.setUpPipe("text2img")
     base_name = self.getResultsBase(dir)
     print(" start text2img(%s,%s)" % (dir, prompt))
-    
+
     self.results = []
     for i in range(count):
       print(" create img2img(%d/%d)" % (i, count))
@@ -120,7 +138,10 @@ class DiffusionClient:
           eta= eta,
           ).images[0]
       path = base_name + "_" + str(self.seed) + "_"  + str(i) + f".png"
-      image.save(path)
+      if self.encrypt_key is not None:
+        self.encrypt(image, path)
+      else:
+        image.save(path)
       self.results.append(path)
       self.log(
           "text2img",
@@ -151,7 +172,7 @@ class DiffusionClient:
       guidance_scale = 7.5,
       negative_prompt = None,
       eta = 0.0,
-      ): 
+      ):
     self.setUpPipe("img2img")
 
     base_name = self.getResultsBase(dir)
@@ -177,7 +198,10 @@ class DiffusionClient:
             eta = eta,
             ).images[0]
         path = base_name + "_" + str(self.seed) + "_" + str(i) + "_" + str(strength) + f".png"
-        image.save(path)
+        if self.encrypt_key is not None:
+          self.encrypt(image, path)
+        else:
+          image.save(path)
         self.results.append(path)
         self.log(
             "img2img",
@@ -209,7 +233,7 @@ class DiffusionClient:
       guidance_scale= 7.5,
       negative_prompt= None,
       eta = 0.0,
-      ): 
+      ):
     self.setUpPipe("inpainting")
     base_name = self.getResultsBase(dir)
 
@@ -235,7 +259,10 @@ class DiffusionClient:
             eta = eta,
             ).images[0]
         path = base_name + "_" + str(self.seed) + "_"  + str(i) + "_" + str(strength) + f".png"
-        image.save(path)
+        if self.encrypt_key is not None:
+          self.encrypt(image, path)
+        else:
+          image.save(path)
         self.results.append(path)
         self.log(
             "img2img",
@@ -376,7 +403,7 @@ class DiffusionClient:
           use_auth_token=self.hugging_face_token,
           )
       self.pipe.to("cuda")
-    
+
     if type == "img2img":
       print("setup img2img")
       if self.text_encoder is None:
@@ -396,7 +423,7 @@ class DiffusionClient:
           use_auth_token=self.hugging_face_token,
           )
       self.pipe.to("cuda")
-    
+
     if type == "inpainting":
       print("setup inpainting")
       if self.text_encoder is None:
@@ -432,7 +459,7 @@ class DiffusionClient:
           use_auth_token=self.hugging_face_token,
           )
       self.pipe.to("cuda")
-    
+
     if type == "img2video":
       print("setup videos")
       if self.text_encoder is None:
@@ -449,7 +476,7 @@ class DiffusionClient:
           tokenizer=self.tokenizer,
           use_auth_token=self.hugging_face_token,
           )
-        
+
       self.pipe.to("cuda")
 
     self.pipe_type = type
@@ -459,7 +486,7 @@ class DiffusionClient:
       sys.exit()
 
     if self.nsfw_ok:
-      def dummy(images, **kwargs): return images, False 
+      def dummy(images, **kwargs): return images, False
       self.pipe.safety_checker = dummy
     if self.less_memory:
       self.pipe.enable_attention_slicing()

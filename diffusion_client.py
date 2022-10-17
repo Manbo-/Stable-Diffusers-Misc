@@ -15,6 +15,7 @@ from stable_diffusion_videos.stable_diffusion_img2img_pipeline import StableDiff
 from stable_diffusion_videos.stable_diffusion_walk import StableDiffusionVideoCreater
 
 import io
+import random
 from cryptography.fernet import Fernet
 
 class DiffusionClient:
@@ -156,7 +157,7 @@ class DiffusionClient:
           prompt,
           path
           )
-      self.seed = self.seed + 1
+      self.seed = randint(0, 4294967295)
     return self.results
 
   def img2img(
@@ -216,7 +217,7 @@ class DiffusionClient:
             prompt,
             path
             )
-        self.seed = self.seed + 1
+        self.seed = randint(0, 4294967295)
     return self.results
 
   def inpainting(
@@ -277,7 +278,7 @@ class DiffusionClient:
             prompt,
             path
             )
-        self.seed = self.seed + 1
+        self.seed = randint(0, 4294967295)
     return self.results
   def text2video(self, dir, count, width, height, prompts , num_steps, make_video=False, fps=10, do_loop=False, scheduler="ddim"):
     self.setUpPipe("text2video")
@@ -322,7 +323,7 @@ class DiffusionClient:
           prompts_text,
           base_name + "/" + str(self.seed)
           )
-      self.seed = self.seed + 1
+      self.seed = randint(0, 4294967295)
 
   def img2video(self, dir, count, width, height, prompts, image_names, strength , num_steps, make_video=False, fps=10, do_loop=False, scheduler="ddim"):
     self.setUpPipe("img2video")
@@ -375,7 +376,7 @@ class DiffusionClient:
           prompts_text,
           base_name + "/" + str(self.seed)
           )
-      self.seed = self.seed + 1
+      self.seed = randint(0, 4294967295)
 
   def setModel(self, library, revision):
     self.model_loaded= False

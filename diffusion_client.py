@@ -1,7 +1,3 @@
-# remove schedulr
-# random seed
-# self
-
 import os
 import datetime
 import torch
@@ -15,7 +11,6 @@ from stable_diffusion_videos.stable_diffusion_img2img_pipeline import StableDiff
 from stable_diffusion_videos.stable_diffusion_walk import StableDiffusionVideoCreater
 
 import io
-import random
 from cryptography.fernet import Fernet
 
 class DiffusionClient:
@@ -76,9 +71,12 @@ class DiffusionClient:
             "Mask",
             "Strength",
             "Prompt",
+            "Negative",
+            "Steps"
+            "Model"
         ]) + "\n")
 
-  def log(self, action, i, sum, seed, width, height, base, mask, strength, prompt, path):
+  def log(self, action, i, sum, seed, width, height, base, mask, strength, prompt, negative, num_inference_steps, path):
     now = datetime.datetime.now(self.JST)
     filename = path.rsplit('/', 1)[1]
     dir = path.rsplit('/', 1)[0]
@@ -97,6 +95,9 @@ class DiffusionClient:
           mask,
           strength,
           prompt,
+          negative,
+          num_inference_steps,
+          f"{self.library},{self.revision}",
       ]) + "\n")
 
   def getResultsBase(self, dir):
@@ -146,15 +147,17 @@ class DiffusionClient:
       self.results.append(path)
       self.log(
           "text2img",
-            str(i),
-            str(count),
-            str(self.seed),
+          str(i),
+          str(count),
+          str(self.seed),
           str(width),
           str(height),
           "",
           "",
           "",
           prompt,
+          negative_prompt,
+          str(num_inference_steps),
           path
           )
       self.seed = randint(0, 4294967295)
@@ -215,6 +218,8 @@ class DiffusionClient:
             "",
             str(strength),
             prompt,
+            negative_prompt,
+            str(num_inference_steps),
             path
             )
         self.seed = randint(0, 4294967295)
@@ -276,6 +281,8 @@ class DiffusionClient:
             mask_name,
             str(strength),
             prompt,
+            negative_prompt,
+            str(num_inference_steps),
             path
             )
         self.seed = randint(0, 4294967295)
@@ -321,6 +328,7 @@ class DiffusionClient:
           "",
           "",
           prompts_text,
+          "",
           base_name + "/" + str(self.seed)
           )
       self.seed = randint(0, 4294967295)
@@ -374,6 +382,8 @@ class DiffusionClient:
           "",
           "",
           prompts_text,
+          negative_prompt,
+          str(num_inference_steps),
           base_name + "/" + str(self.seed)
           )
       self.seed = randint(0, 4294967295)
